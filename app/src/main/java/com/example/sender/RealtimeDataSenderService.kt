@@ -16,7 +16,7 @@ import java.io.IOException
 class RealtimeDataSenderService : Service() {
 
     private val client = OkHttpClient()
-    private val serverUrl = "http://102.165.100.62:47696/api/text"
+    private val serverUrl = "http://your server ip here:port/api/text"
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val text = intent?.getStringExtra("text")
