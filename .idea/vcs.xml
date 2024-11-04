@@ -2,5 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/RAT-Android-APP-Text-Watcher-Service-sms-contacts-logs" vcs="Git" />
   </component>
 </project>
