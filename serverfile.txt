@@ -1,0 +1,135 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+
+const app = express();
+const port = YourPortHere;
+
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+app.use(cors());
+
+// Пути к файлам для хранения данных
+const dataFilePath = path.join(__dirname, 'data.json');
+const textFilePath = path.join(__dirname, 'text_data.json');
+const audioDir = path.join(__dirname, 'audio');
+
+// Создаем директорию для аудио, если её нет
+if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir);
+}
+
+// Функция для записи данных в файл
+const writeDataToFile = (filePath, data) => {
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+        console.log(`Данные успешно записаны в файл: ${filePath}`);
+    } catch (error) {
+        console.error(`Ошибка при записи в файл ${filePath}:`, error);
+    }
+};
+
+// Функция для чтения данных из файла
+const readDataFromFile = (filePath) => {
+    if (fs.existsSync(filePath)) {
+        try {
+            const data = fs.readFileSync(filePath, 'utf-8');
+            if (data.trim() === '') {
+                console.log(`Файл ${filePath} пуст.`);
+                return [];
+            }
+            return JSON.parse(data);
+        } catch (error) {
+            console.error(`Ошибка при чтении/парсинге файла ${filePath}:`, error);
+            return [];
+        }
+    } else {
+        console.log(`Файл ${filePath} не существует.`);
+        return [];
+    }
+};
+
+// Новый маршрут для регистрации устройства
+app.post('/api/register', (req, res) => {
+    try {
+        const deviceSerial = req.body.deviceSerial;
+        if (!deviceSerial) {
+            return res.status(400).json({ error: 'Device serial is required' });
+        }
+
+        let currentData = readDataFromFile(dataFilePath);
+        const existingDevice = currentData.find(device => device.deviceSerial === deviceSerial);
+
+        if (!existingDevice) {
+            currentData.push({ deviceSerial, history: [] });
+            writeDataToFile(dataFilePath, currentData);
+            console.log(`Новое устройство зарегистрировано: ${deviceSerial}`);
+        } else {
+            console.log(`Устройство уже зарегистрировано: ${deviceSerial}`);
+        }
+
+        res.status(200).json({ message: 'Device registered successfully' });
+    } catch (error) {
+        console.error('Error registering device:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Обработка POST-запроса на /api/endpoint для данных устройства
+app.post('/api/endpoint', (req, res) => {
+    try {
+        const deviceSerial = req.body.deviceSerial || 'unknown_serial';
+        const deviceData = req.body;
+
+        console.log(`Получен запрос от устройства с серийным номером: ${deviceSerial}`);
+
+        let currentData = readDataFromFile(dataFilePath);
+
+        let deviceEntry = currentData.find(device => device.deviceSerial === deviceSerial);
+
+        if (!deviceEntry) {
+            deviceEntry = { deviceSerial, history: [] };
+            currentData.push(deviceEntry);
+        }
+
+        deviceEntry.history.push({
+            timestamp: new Date().toISOString(),
+            data: deviceData,
+        });
+
+        writeDataToFile(dataFilePath, currentData);
+        res.status(200).send(`Данные устройства ${deviceSerial} успешно получены`);
+    } catch (error) {
+        console.error('Error processing device data:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Обработка POST-запроса на /api/text для текстовых данных
+app.post('/api/text', (req, res) => {
+    try {
+        const deviceSerial = req.body.deviceSerial || 'unknown_serial';
+        console.log(`Получен текстовый запрос от устройства с серийным номером: ${deviceSerial}`);
+
+        const textData = readDataFromFile(textFilePath);
+        textData.push({
+            timestamp: new Date().toISOString(),
+            serial: deviceSerial,
+            text: req.body.inputText,
+        });
+        writeDataToFile(textFilePath, textData);
+
+        res.status(200).send('Текстовые данные успешно получены');
+    } catch (error) {
+        console.error('Error processing text data:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Сервер запущен на http://0.0.0.0:${port}`);
+});
